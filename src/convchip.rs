@@ -13,30 +13,29 @@ use halo2_proofs::{
     poly::Rotation,
 };
 
-use Matrix::Matrix;
+mod Matrix;
+
 trait ConvInstructions<F: Field>: Chip<F> {
-    // Use a vector to represent a matrix
-    type Matrix;
     // Loads input
-    fn load_input(&self, layouter: impl Layouter<F>, input: Self::Matrix);
+    fn load_input(&self, layouter: impl Layouter<F>, input: Matrix);
 
     // Loads kernel and bias matrix
-    fn load_param(&self, layouter: impl Layouter<F>, kernel: Self::Matrix, bias: Self::Matrix) -> Result<(), Error>;
+    fn load_param(&self, layouter: impl Layouter<F>, kernel: Matrix, bias: Matrix) -> Result<(), Error>;
 
     // Returns `ouput = input * kernel + bias`.
     fn conv(
         &self,
         layouter: impl Layouter<F>,
-        input: Self::Matrix,
-        kernel: Self::Matrix,
-        bias: Self::Matrix,
-    ) -> Result<Self::Matrix, Error>;
+        input: Matrix,
+        kernel: Matrix,
+        bias: Matrix,
+    ) -> Result<Matrix, Error>;
 
     /// Exposes a matrix as a public input to the circuit.
     fn expose_public(
         &self,
         layouter: impl Layouter<F>,
-        ouput: Self::Matrix,
+        ouput: Matrix,
         row: usize,
     ) -> Result<(), Error>;
 }
@@ -127,7 +126,6 @@ impl<F: Field> ConvChip<F> {
 }
 
 impl<F: Field> ConvInstructions<F> for ConvChip<F> {
- // Specify the associated type
- type Matrix = Vec<Vec<F>>;
+
 
 }
