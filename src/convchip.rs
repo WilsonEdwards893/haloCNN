@@ -1,4 +1,5 @@
 use std::{marker::PhantomData, os::windows::prelude::FileExt};
+
 //stride = 1, padding = 0
 use halo2_proofs::{
     arithmetic::Field,
@@ -12,9 +13,7 @@ use halo2_proofs::{
     poly::Rotation,
 };
 
-
-
-
+use Matrix::Matrix;
 trait ConvInstructions<F: Field>: Chip<F> {
     // Use a vector to represent a matrix
     type Matrix;
@@ -95,6 +94,7 @@ impl<F: Field> ConvChip<F> {
         let s_conv = meta.selector();
 
         meta.create_gate("conv", |meta| {
+
             // Query the variables from the columns
             let x = meta.query_advice(advice[0], Rotation::cur()); // Input image
             let w = meta.query_advice(advice[1], Rotation::cur()); // Kernel matrix
