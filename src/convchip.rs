@@ -1,5 +1,5 @@
 use std::{marker::PhantomData, os::windows::prelude::FileExt};
-
+mod Martix;
 //stride = 1, padding = 0
 use halo2_proofs::{
     arithmetic::Field,
@@ -12,8 +12,6 @@ use halo2_proofs::{
     },
     poly::Rotation,
 };
-
-mod Matrix;
 
 trait ConvInstructions<F: Field>: Chip<F> {
     // Loads input
