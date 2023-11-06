@@ -1,5 +1,6 @@
+use crate::Matrix::Matrix;
+
 use std::{marker::PhantomData, os::windows::prelude::FileExt};
-mod Martix;
 //stride = 1, padding = 0
 use halo2_proofs::{
     arithmetic::Field,
