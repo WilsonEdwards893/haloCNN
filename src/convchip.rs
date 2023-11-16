@@ -1,10 +1,8 @@
-use crate::Matrix::Matrix;
-
-use std::{marker::PhantomData, os::windows::prelude::FileExt};
+use std::{marker::PhantomData};
 //stride = 1, padding = 0
 use halo2_proofs::{
     arithmetic::Field,
-    circuit::{layouter::TableLayouter, Cell, Value, Chip, Layouter},
+    circuit::{layouter::TableLayouter, Cell, Value, Chip, Layouter, AssignedCell},
     dev::{MockProver, VerifyFailure},
     pasta::Fp,
     plonk::{
@@ -14,27 +12,31 @@ use halo2_proofs::{
     poly::Rotation,
 };
 
+pub use crate::matrix::Matrix;
+use crate::matrix::{rows, shape};
+
 trait ConvInstructions<F: Field>: Chip<F> {
+    type Num;
     // Loads input
-    fn load_input(&self, layouter: impl Layouter<F>, input: Matrix);
+    fn load_input(&self, layouter: impl Layouter<F>, input: &Matrix<Value<F>>)-> Result<(), Error>;
 
     // Loads kernel and bias matrix
-    fn load_param(&self, layouter: impl Layouter<F>, kernel: Matrix, bias: Matrix) -> Result<(), Error>;
+    fn load_param(&self, layouter: impl Layouter<F>, kernel: Matrix<Value<F>>, bias: Vec<Value<F>>) -> Result<(), Error>;
 
     // Returns `ouput = input * kernel + bias`.
     fn conv(
         &self,
         layouter: impl Layouter<F>,
-        input: Matrix,
-        kernel: Matrix,
-        bias: Matrix,
-    ) -> Result<Matrix, Error>;
+        input: Matrix<Value<F>>,
+        kernel: Matrix<Value<F>>,
+        bias: Vec<Value<F>>,
+    ) -> Result<Matrix<Value<F>>, Error>;
 
-    /// Exposes a matrix as a public input to the circuit.
+    // Exposes a matrix as a public input to the circuit.
     fn expose_public(
         &self,
         layouter: impl Layouter<F>,
-        ouput: Matrix,
+        ouput: Matrix<F>,
         row: usize,
     ) -> Result<(), Error>;
 }
@@ -82,37 +84,49 @@ impl<F: Field> ConvChip<F> {
         advice: [Column<Advice>; 3],
         instance: Column<Instance>,
         constant: Column<Fixed>,
+        n: usize //shape of kernel
     ) -> <Self as Chip<F>>::Config {
-        // Create an instance column for output
-        let instance = meta.instance_column();
-
-        // Create a fixed column for constants
-        let constant = meta.fixed_column();
-
+        meta.enable_equality(instance);
+        meta.enable_constant(constant);
+        for column in &advice {
+            meta.enable_equality(*column);
+        }
         let s_conv = meta.selector();
-
+        
         meta.create_gate("conv", |meta| {
-
-            // Query the variables from the columns
-            let x = meta.query_advice(advice[0], Rotation::cur()); // Input image
-            let w = meta.query_advice(advice[1], Rotation::cur()); // Kernel matrix
-            let b = meta.query_advice(advice[2], Rotation::cur()); // Bias vector
-            let y = meta.query_instance(instance, Rotation::cur()); // Output image
-            let one = meta.query_fixed(constant); // Constant one
-
             // Query the selector
             let s_conv = meta.query_selector(s_conv);
 
+            // Query the variables from the columns
+            let x = meta.query_advice(advice[0], Rotation::cur()); // Input matrix
+            let w = meta.query_advice(advice[1], Rotation::cur()); // Kernel matrix
+            let b = meta.query_advice(advice[2], Rotation::cur()); // Bias vector
+            let y = meta.query_instance(instance, Rotation::cur()); // Output matrix
+
             // Construct the expressions for the convolution formula and constraint
             // y[i,j] = sum(x[i+k,j+l] * w[k,l] + b[i,j]) for k,l in [0,n-1]
-            let xw = x * w; // x[i+k,j+l] * w[k,l]
-            let rp = RunningProduct::new(meta, xw); // Running product of xw
-            let sum = rp.product() + b; // sum(x[i+k,j+l] * w[k,l]) + b[i,j]
-            let res = sum - y; // sum(x[i+k,j+l] * w[k,l]) + b[i,j] - y[i,j]
+            let mut res = b;
+
+            for k in 0..n {
+                for l in 0..n {
+                    // value of x[i+k,j+l]
+                    let x_ikjl = meta.query_advice(
+                        advice[0],
+                        Rotation((k * n + l) as i32),
+                    );
+                    // value of w[k,l]
+                    let w_kl = meta.query_advice(
+                        advice[1],
+                        Rotation((k * n + l) as i32),
+                    );
+                    // sum x[i+k,j+l] * w[k,l]
+                    res = res + x_ikjl * w_kl;
+                }
+            }
 
             // Return the polynomial constraint
-            // If s_conv is enabled, then res must be zero, otherwise it can be anything
-            vec![s_conv * res]
+            // If s_conv is enabled, then y[i,j]-sum(x[i+k,j+l] * w[k,l] + b[i,j]) must be zero, otherwise it can be anything
+            vec![s_conv * (y - res)]
         });
 
         ConvChipConfig {
@@ -122,9 +136,68 @@ impl<F: Field> ConvChip<F> {
             s_conv,
         }
     }
+
 }
 
-impl<F: Field> ConvInstructions<F> for ConvChip<F> {
+/// A variable representing a number.
+#[derive(Clone)]
+struct Number<F: Field>(AssignedCell<F, F>);
 
+impl<F: Field> ConvInstructions<F> for ConvChip<F> {
+    type Num = Number<F>;
+
+    // load input matrix
+    fn load_input(&self, mut layouter: impl Layouter<F>, input: &Matrix<Value<F>>)-> Result<(), Error> {
+        
+        let config = self.config();
+        let (row, col) = shape(input);
+        
+        // 分配 input 的值到对应的 advice 列中
+        layouter.assign_region(
+            || "load input",
+            |mut region| {
+                // 遍历每一行
+                for i in 0..row {
+                    // 遍历每一列
+                    for j in 0..col {
+                        // 获取 input[i][j] 的值
+                        let value = input[i][j];
+                        // 分配 value 到当前单元格
+                        region
+                        .assign_advice(
+                            || format!("input[{}][{}]", i, j),
+                            config.advice[0],
+                            i * col + j, // offset of current cell
+                            || value,
+                        );
+                    }
+                }
+                Ok(())
+            },
+        )
+    }
+
+    fn load_param(&self, mut layouter: impl Layouter<F>, kernel: Matrix<Value<F>>, bias: Vec<Value<F>>) -> Result<(), Error> {
+        todo!()
+    }
+
+    fn conv(
+        &self,
+        layouter: impl Layouter<F>,
+        input: Matrix<Value<F>>,
+        kernel: Matrix<Value<F>>,
+        bias: Vec<Value<F>>,
+    ) -> Result<Matrix<Value<F>>, Error> {
+        todo!()
+    }
+
+    fn expose_public(
+        &self,
+        layouter: impl Layouter<F>,
+        ouput: Matrix<F>,
+        row: usize,
+    ) -> Result<(), Error> {
+        todo!()
+    }
 
 }

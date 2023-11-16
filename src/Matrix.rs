@@ -24,6 +24,14 @@ fn columns<T>(matrix: &Matrix<T>) -> usize {
     }
 }
 
+/// Returns the shape of a matrix as a tuple of (rows, columns). 
+/// Panics if the matrix is not well-formed. 
+pub fn shape<T>(matrix: &Matrix<T>) -> (usize, usize) { 
+    let r = rows(matrix); 
+    let c = columns(matrix); 
+    (r, c) 
+}
+
 // This wastefully discards the actual inverse, if it exists, so in general callers should
 // just call `invert` if that result will be needed.
 pub(crate) fn is_invertible<F: Field>(matrix: &Matrix<F>) -> bool {
@@ -55,6 +63,28 @@ fn scalar_vec_mul<F: Field>(scalar: F, vec: &[F]) -> Vec<F> {
         .collect::<Vec<_>>()
 }
 
+//matix add
+pub fn mat_add<F: Field>(a: &Matrix<F>, b: &Matrix<F>) -> Option<Matrix<F>> { 
+    if rows(a) != rows(b) || columns(a) != columns(b) { 
+        return None; 
+    };
+
+    let res = a
+        .iter()
+        .zip(b.iter())
+        .map(|(row_a, row_b)| {
+            row_a
+                .iter()
+                .zip(row_b.iter())
+                .map(|(elem_a, elem_b)| *elem_a + *elem_b)
+                .collect()
+        })
+        .collect();
+
+    Some(res)
+}
+
+//matix multiplication
 pub fn mat_mul<F: Field>(a: &Matrix<F>, b: &Matrix<F>) -> Option<Matrix<F>> {
     if rows(a) != columns(b) {
         return None;
@@ -75,7 +105,7 @@ pub fn mat_mul<F: Field>(a: &Matrix<F>, b: &Matrix<F>) -> Option<Matrix<F>> {
 }
 
 fn vec_mul<F: Field>(a: &[F], b: &[F]) -> F {
-    a.iter().zip(b).fold(F::ZERO, |mut acc, (v1, v2)| {
+    a.iter().zip(b).fold(F::zero(), |mut acc, (v1, v2)| {
         let mut tmp = *v1;
         tmp.mul_assign(v2);
         acc.add_assign(&tmp);
@@ -114,7 +144,7 @@ pub fn left_apply_matrix<F: Field>(m: &Matrix<F>, v: &[F]) -> Vec<F> {
         "Matrix can only be applied to vector of same size."
     );
 
-    let mut result = vec![F::ZERO; v.len()];
+    let mut result = vec![F::zero(); v.len()];
 
     for (result, row) in result.iter_mut().zip(m.iter()) {
         for (mat_val, vec_val) in row.iter().zip(v) {
@@ -135,7 +165,7 @@ pub fn apply_matrix<F: Field>(m: &Matrix<F>, v: &[F]) -> Vec<F> {
         "Matrix can only be applied to vector of same size."
     );
 
-    let mut result = vec![F::ZERO; v.len()];
+    let mut result = vec![F::zero(); v.len()];
     for (j, val) in result.iter_mut().enumerate() {
         for (i, row) in m.iter().enumerate() {
             let mut tmp = row[j];
@@ -163,18 +193,18 @@ pub fn transpose<F: Field>(matrix: &Matrix<F>) -> Matrix<F> {
 
 #[allow(clippy::needless_range_loop)]
 pub fn make_identity<F: Field>(size: usize) -> Matrix<F> {
-    let mut result = vec![vec![F::ZERO; size]; size];
+    let mut result = vec![vec![F::zero(); size]; size];
     for i in 0..size {
-        result[i][i] = F::ONE;
+        result[i][i] = F::one();
     }
     result
 }
 
 pub fn kronecker_delta<F: Field>(i: usize, j: usize) -> F {
     if i == j {
-        F::ONE
+        F::one()
     } else {
-        F::ZERO
+        F::zero()
     }
 }
 
@@ -223,7 +253,7 @@ fn eliminate<F: Field>(
     column: usize,
     shadow: &mut Matrix<F>,
 ) -> Option<Matrix<F>> {
-    let zero = F::ZERO;
+    let zero = F::zero();
     let pivot_index = (0..rows(matrix))
         .find(|&i| matrix[i][column] != zero && (0..column).all(|j| matrix[i][j] == zero))?;
 
@@ -351,3 +381,4 @@ pub(crate) fn invert<F: Field>(matrix: &Matrix<F>) -> Option<Matrix<F>> {
     ut.and_then(|x| reduce_to_identity(&x, &mut shadow))
         .and(Some(shadow))
 }
+

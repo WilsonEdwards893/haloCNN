@@ -11,7 +11,7 @@ use halo2_proofs::{
 };
 
 mod convchip;
-
+mod matrix;
 fn main() {
     
 }

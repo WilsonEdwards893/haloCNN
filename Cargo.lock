@@ -106,6 +106,17 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "ff"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d013fc25338cc558c5c2cfbad646908fb23591e2404481826742b651c9af7160"
+dependencies = [
+ "bitvec",
+ "rand_core",
+ "subtle",
+]
+
+[[package]]
+name = "ff"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
@@ -138,7 +149,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
 dependencies = [
- "ff",
+ "ff 0.13.0",
  "rand_core",
  "subtle",
 ]
@@ -148,7 +159,7 @@ name = "halo2_proofs"
 version = "0.3.0"
 dependencies = [
  "blake2b_simd",
- "ff",
+ "ff 0.13.0",
  "group",
  "maybe-rayon",
  "pasta_curves",
@@ -160,6 +171,7 @@ dependencies = [
 name = "halo2_test"
 version = "0.0.1"
 dependencies = [
+ "ff 0.12.1",
  "halo2_proofs",
 ]
 
@@ -226,7 +238,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3e57598f73cc7e1b2ac63c79c517b31a0877cd7c402cdcaa311b5208de7a095"
 dependencies = [
  "blake2b_simd",
- "ff",
+ "ff 0.13.0",
  "group",
  "lazy_static",
  "rand",
