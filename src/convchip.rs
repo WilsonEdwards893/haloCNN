@@ -18,7 +18,7 @@ use crate::matrix::{rows, shape};
 trait ConvInstructions<F: Field>: Chip<F> {
     type Num;
     // Loads input
-    fn load_input(&self, layouter: impl Layouter<F>, input: &Matrix<Value<F>>)-> Result<(), Error>;
+    fn load_input(&self, layouter: impl Layouter<F>, input: &Matrix<Value<F>>)-> Result<Matrix<Value<F>>, Error>;
 
     // Loads kernel and bias matrix
     fn load_param(&self, layouter: impl Layouter<F>, kernel: Matrix<Value<F>>, bias: Vec<Value<F>>) -> Result<(), Error>;
@@ -147,13 +147,18 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
     type Num = Number<F>;
 
     // load input matrix
-    fn load_input(&self, mut layouter: impl Layouter<F>, input: &Matrix<Value<F>>)-> Result<(), Error> {
+    fn load_input(&self, mut layouter: impl Layouter<F>, input: &Matrix<Value<F>>)-> Result<Matrix<Value<F>>, Error> {
         
         let config = self.config();
+
+        // acquire the row and column of a matrix
         let (row, col) = shape(input);
         
-        // 分配 input 的值到对应的 advice 列中
-        layouter.assign_region(
+        // create a vector for assigned vallue
+        let mut values = Vec::new();
+
+         // assign input values to the corresponding advice columns
+        let _ = layouter.assign_region(
             || "load input",
             |mut region| {
                 // 遍历每一行
@@ -163,18 +168,28 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                         // 获取 input[i][j] 的值
                         let value = input[i][j];
                         // 分配 value 到当前单元格
-                        region
+                        let _ = region
                         .assign_advice(
                             || format!("input[{}][{}]", i, j),
                             config.advice[0],
                             i * col + j, // offset of current cell
                             || value,
                         );
+
+                        values.push(value);
                     }
                 }
                 Ok(())
             },
-        )
+        );
+        // turn vector to a matrix
+        let matrix = values
+        .chunks(col)
+        .map(|chunk| chunk.to_vec())
+        .collect::<Matrix<Value<F>>>();
+
+        // return matrix
+        Ok(matrix)
     }
 
     fn load_param(&self, mut layouter: impl Layouter<F>, kernel: Matrix<Value<F>>, bias: Vec<Value<F>>) -> Result<(), Error> {
