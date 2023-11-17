@@ -18,10 +18,10 @@ use crate::matrix::{rows, shape};
 trait ConvInstructions<F: Field>: Chip<F> {
     type Num;
     // Loads input
-    fn load_input(&self, layouter: impl Layouter<F>, input: &Matrix<Value<F>>)-> Result<Matrix<Value<F>>, Error>;
+    fn load_matrix(&self, layouter: impl Layouter<F>, index:usize, input: &Matrix<Value<F>>)-> Result<Matrix<Value<F>>, Error>;
 
     // Loads kernel and bias matrix
-    fn load_param(&self, layouter: impl Layouter<F>, kernel: Matrix<Value<F>>, bias: Vec<Value<F>>) -> Result<(), Error>;
+    fn load_bias(&self, layouter: impl Layouter<F>, bias: Vec<Value<F>>) -> Result<(), Error>;
 
     // Returns `ouput = input * kernel + bias`.
     fn conv(
@@ -146,8 +146,8 @@ struct Number<F: Field>(AssignedCell<F, F>);
 impl<F: Field> ConvInstructions<F> for ConvChip<F> {
     type Num = Number<F>;
 
-    // load input matrix
-    fn load_input(&self, mut layouter: impl Layouter<F>, input: &Matrix<Value<F>>)-> Result<Matrix<Value<F>>, Error> {
+    // load matrix
+    fn load_matrix(&self, mut layouter: impl Layouter<F>, index: usize, input: &Matrix<Value<F>>)-> Result<Matrix<Value<F>>, Error> {
         
         let config = self.config();
 
@@ -171,7 +171,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                         let _ = region
                         .assign_advice(
                             || format!("input[{}][{}]", i, j),
-                            config.advice[0],
+                            config.advice[index],
                             i * col + j, // offset of current cell
                             || value,
                         );
@@ -192,8 +192,10 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
         Ok(matrix)
     }
 
-    fn load_param(&self, mut layouter: impl Layouter<F>, kernel: Matrix<Value<F>>, bias: Vec<Value<F>>) -> Result<(), Error> {
-        todo!()
+    fn load_bias(&self, mut layouter: impl Layouter<F>, bias: Vec<Value<F>>) -> Result<(), Error> {
+        let config = self.config();
+
+        
     }
 
     fn conv(
@@ -203,7 +205,9 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
         kernel: Matrix<Value<F>>,
         bias: Vec<Value<F>>,
     ) -> Result<Matrix<Value<F>>, Error> {
-        todo!()
+        let config = self.config();
+
+
     }
 
     fn expose_public(
@@ -212,7 +216,9 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
         ouput: Matrix<F>,
         row: usize,
     ) -> Result<(), Error> {
-        todo!()
+        let config = self.config();
+
+        layouter.constrain_instance(num.0.cell(), config.instance, row)
     }
 
 }
