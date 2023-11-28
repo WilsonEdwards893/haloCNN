@@ -155,9 +155,9 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
         let (row, col) = shape(input);
         
         // create a vector for assigned vallue
-        let mut values = Vec::new();
+        // let mut values = Vec::new();
 
-         // assign input values to the corresponding advice columns
+        // assign input values to the corresponding advice columns
         let _ = layouter.assign_region(
             || "load input",
             |mut region| {
@@ -176,20 +176,20 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                             || value,
                         );
 
-                        values.push(value);
+                        // values.push(value);
                     }
                 }
                 Ok(())
             },
         );
         // turn vector to a matrix
-        let matrix = values
-        .chunks(col)
-        .map(|chunk| chunk.to_vec())
-        .collect::<Matrix<Value<F>>>();
+        // let matrix = values
+        // .chunks(col)
+        // .map(|chunk| chunk.to_vec())
+        // .collect::<Matrix<Value<F>>>();
 
         // return matrix
-        Ok(matrix)
+        Ok(input.to_vec())
     }
 
     fn load_param(&self, mut layouter: impl Layouter<F>, kernel: Matrix<Value<F>>, bias: Vec<Value<F>>) -> Result<(), Error> {
