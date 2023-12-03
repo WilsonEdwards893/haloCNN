@@ -22,7 +22,7 @@ trait ConvInstructions<F: Field>: Chip<F> {
     fn load_matrix(&self, layouter: impl Layouter<F>, index:usize, input: &Matrix<Value<F>>)-> Result<Matrix<Self::Num>, Error>;
 
     // Loads kernel and bias matrix
-    fn load_bias(&self, layouter: impl Layouter<F>, bias: Vec<Value<F>>) -> Result<(), Error>;
+    fn load_bias(&self, layouter: impl Layouter<F>, bias: Vec<Value<F>>) -> Result<Vec<Self::Num>, Error>;
 
     // Returns `ouput = input * kernel + bias`.
     fn conv(
@@ -178,7 +178,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                         ).map(Number)
                         ;
 
-                        values.push(ret);
+                        values.push(ret.unwrap());
                     }
                 }
                 Ok(())
@@ -188,17 +188,19 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
         let matrix = values
         .chunks(col)
         .map(|chunk| chunk.to_vec())
-        .collect::<Matrix<Number<F>>>();
+        .collect::<Matrix<Self::Num>>();
 
         // return matrix
         Ok(matrix)
     }
 
-    fn load_bias(&self, mut layouter: impl Layouter<F>, bias: Vec<Value<F>>) -> Result<(), Error> {
+    fn load_bias(&self, mut layouter: impl Layouter<F>, bias: Vec<Value<F>>) -> Result<Vec<Self::Num>, Error> {
         let config = self.config();
 
         // acquire the length of the bias vector
         let len = bias.len();
+
+        let mut values = Vec::new();
 
         // assign bias values to the corresponding advice columns
         let _ = layouter.assign_region(
@@ -209,23 +211,25 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                     // get the bias[i] value
                     let value = bias[i];
                     // assign value to the current cell
-                    let _ = region
+                    let ret = region
                     .assign_advice(
                         || format!("bias[{}]", i),
-                        config.advice[0], // use the first advice column
+                        config.advice[2], // use the third advice column
                         i, // offset of current cell
                         || value,
-                    );
+                    ).map(Number);
+                    // add the assigned value to the vector
+                    values.push(ret.unwrap());
                 }
                 Ok(())
             },
         );
-        Ok(())
+        Ok(values)
     }
 
     fn conv(
         &self,
-        layouter: impl Layouter<F>,
+        mut layouter: impl Layouter<F>,
         input: Matrix<Self::Num>,
         kernel: Matrix<Self::Num>,
         bias: Vec<Self::Num>
@@ -237,61 +241,70 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
         let (kernel_row, kernel_col) = shape(&kernel);
 
         // check if the bias vector has the same length as the kernel row
-        if bias.len() != kernel_row {
-            return Err(Error::Synthesis);
-        }
+        // if bias.len() != kernel_row {
+            //return Err(Error::Synthesis);
+        // }
 
+        let output_row = input_row - kernel_row + 1;
+        let output_col = input_col - kernel_col + 1;
         // create a vector for the output values
         let mut values = Vec::new();
 
-        // iterate over the input matrix with a sliding window of the kernel size
-        for i in 0..(input_row - kernel_row + 1) {
-            for j in 0..(input_col - kernel_col + 1) {
-                // create a vector for the dot product values
-                let mut dot_products = Vec::new();
+        // assign output values to the corresponding advice columns
+        layouter.assign_region(
+            || "assign output",
+            |mut region| {
+                // iterate over the input matrix with a sliding window of the kernel size
+                for i in 0..(input_row - kernel_row + 1) {
+                    for j in 0..(input_col - kernel_col + 1) {
+                        // create a vector for the dot product values
+                        let mut dot_products = Vec::new();
 
-                // iterate over the kernel matrix
-                for k in 0..kernel_row {
-                    for l in 0..kernel_col {
-                        // get the input[i+k][j+l] and kernel[k][l] values
-                        let input_value = input[i+k][j+l];
-                        let kernel_value = kernel[k][l];
+                        // iterate over the kernel matrix
+                        for k in 0..kernel_row {
+                            for l in 0..kernel_col {
+                                // get the input[i+k][j+l] and kernel[k][l] values
+                                let input_value = input[i+k][j+l];
+                                let kernel_value = kernel[k][l];
 
-                        // multiply the input and kernel values and add them to the dot product vector
-                        let dot_product = input_value.0.value().cloned() * kernel_value.0.value();
-                        dot_products.push(dot_product);
+                                // multiply the input and kernel values and add them to the dot product vector
+                                let dot_product = input_value.0.value().cloned() * kernel_value.0.value();
+                                dot_products.push(dot_product);
+                            }
+                        }
+
+                        // sum up the dot product values
+                        let sum = dot_products.iter().fold(Value::known(Field::ZERO), |acc, x| acc + x);
+
+                        // add the bias value corresponding to the current channel
+                        let output_value = sum + bias[0].0.value();
+
+                        // assign output value to the current cell
+                        let ret = region
+                        .assign_advice(
+                            || format!("output[{}][{}]", i, j),
+                            config.advice[3], // use the third advice column
+                            i * output_col + j, // offset of current cell
+                            || output_value,
+                        ).map(Number);
+
+                         // add the output value to the output vector
+                         values.push(ret.unwrap());
                     }
                 }
+                Ok(())
+            },
+        );
 
-                // sum up the dot product values
-                let sum = dot_products.iter().fold(Fp::from(0), |acc, x| acc + x );
+    // turn the output vector into a matrix
+    let output_matrix = values
+    .chunks(output_col)
+    .map(|chunk| chunk.to_vec())
+    .collect::<Matrix<Self::Num>>();
+    // return the output matrix
+    Ok(output_matrix)
 
-                // add the bias value corresponding to the current channel
-                let output_value = sum + bias[i];
-
-                // add the output value to the output vector
-                values.push(output_value);
-            }
-        }
-
-        // turn the output vector into a matrix
-        let output_row = input_row - kernel_row + 1;
-        let output_col = input_col - kernel_col + 1;
-        let output_matrix = values
-        .chunks(output_col)
-        .map(|chunk| chunk.to_vec())
-        .collect::<Matrix<Self::Num>>();
-
-        // return the output matrix
-        Ok(output_matrix)
-            // turn vector to a matrix
-            // let matrix = values
-            // .chunks(col)
-            // .map(|chunk| chunk.to_vec())
-            // .collect::<Matrix<Value<F>>>();
-
-            // return matrix
-    }
+}
 
     fn expose_public(
         &self,
