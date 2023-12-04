@@ -37,8 +37,7 @@ trait ConvInstructions<F: Field>: Chip<F> {
     fn expose_public(
         &self,
         layouter: impl Layouter<F>,
-        ouput: Matrix<Self::Num>,
-        row: usize,
+        ouput: Matrix<Self::Num>
     ) -> Result<(), Error>;
 }
 
@@ -251,7 +250,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
         let mut values = Vec::new();
 
         // assign output values to the corresponding advice columns
-        layouter.assign_region(
+        let _ = layouter.assign_region(
             || "assign output",
             |mut region| {
                 // iterate over the input matrix with a sliding window of the kernel size
@@ -264,8 +263,8 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                         for k in 0..kernel_row {
                             for l in 0..kernel_col {
                                 // get the input[i+k][j+l] and kernel[k][l] values
-                                let input_value = input[i+k][j+l];
-                                let kernel_value = kernel[k][l];
+                                let input_value = &input[i+k][j+l];
+                                let kernel_value = &kernel[k][l];
 
                                 // multiply the input and kernel values and add them to the dot product vector
                                 let dot_product = input_value.0.value().cloned() * kernel_value.0.value();
@@ -308,13 +307,26 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
 
     fn expose_public(
         &self,
-        layouter: impl Layouter<F>,
-        ouput: Matrix<Self::Num>,
-        row: usize,
+        mut layouter: impl Layouter<F>,
+        input: Matrix<Self::Num>,
     ) -> Result<(), Error> {
         let config = self.config();
-        
-        layouter.constrain_instance(num.0.cell(), config.instance, row)
+        // acquire the shape of the output matrix
+        let (input_row, input_col) = shape(&input);
+         // iterate over the output matrix
+        for i in 0..input_row {
+            for j in 0..input_col {
+                // get the output[i][j] value
+                let value = &input[i][j];
+                // constrain value to the current cell
+                let _ = layouter.constrain_instance(
+                    value.0.cell(),
+                    config.instance, // use the j-th instance column
+                    i * input_row + j, // offset of current cell
+                );
+            }
+        }
+        Ok(())
     }
 
 }

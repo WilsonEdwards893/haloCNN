@@ -10,7 +10,7 @@ use halo2_proofs::{
     poly::Rotation,
 };
 
-mod convchip;
+mod convcircuit;
 mod matrix;
 fn main() {
     
