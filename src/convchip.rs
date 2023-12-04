@@ -65,7 +65,7 @@ impl<F: Field> Chip<F> for ConvChip<F> {
 #[derive(Clone, Debug)]
 struct ConvChipConfig {
     //input, kernel and bias
-    advice: [Column<Advice>; 3],
+    advice: [Column<Advice>; 4],
     // This is the public input (instance) column.
     instance: Column<Instance>,
     constant: Column<Fixed>,
@@ -82,7 +82,7 @@ impl<F: Field> ConvChip<F> {
 
     fn configure(
         meta: &mut ConstraintSystem<F>,
-        advice: [Column<Advice>; 3],
+        advice: [Column<Advice>; 4],
         instance: Column<Instance>,
         constant: Column<Fixed>,
         n: usize //shape of kernel
@@ -283,7 +283,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                         let ret = region
                         .assign_advice(
                             || format!("output[{}][{}]", i, j),
-                            config.advice[3], // use the third advice column
+                            config.advice[3], // use the 4th advice column
                             i * output_col + j, // offset of current cell
                             || output_value,
                         ).map(Number);
@@ -313,7 +313,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
         row: usize,
     ) -> Result<(), Error> {
         let config = self.config();
-
+        
         layouter.constrain_instance(num.0.cell(), config.instance, row)
     }
 
