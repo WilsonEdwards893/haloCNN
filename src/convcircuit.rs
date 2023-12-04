@@ -1,5 +1,5 @@
 use ff::Field;
-use halo2_proofs::circuit::Value;
+use halo2_proofs::{circuit::{Value, SimpleFloorPlanner}, plonk::Circuit};
 
 
 /// The full circuit implementation.
@@ -14,3 +14,9 @@ struct ConvCircuit<F: Field> {
     b: Value<F>,
 }
 
+impl<F: Field> Circuit<F> for ConvCircuit<F> {
+    type Config = ConvChipConfig;
+    type FloorPlanner = SimpleFloorPlanner;
+    
+
+}
