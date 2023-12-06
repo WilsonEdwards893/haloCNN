@@ -1,4 +1,4 @@
 use halo2_proofs::pasta::group::ff::Field;
 
-mod matrix;
-mod convchip;
+pub mod matrix;
+pub mod convchip;

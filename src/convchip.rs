@@ -2,11 +2,9 @@ use std::{marker::PhantomData};
 //stride = 1, padding = 0
 use halo2_proofs::{
     arithmetic::Field,
-    circuit::{layouter::TableLayouter, Cell, Value, Chip, Layouter, AssignedCell},
-    dev::{MockProver, VerifyFailure},
-    pasta::Fp,
+    circuit::{Value, Chip, Layouter, AssignedCell},
     plonk::{
-        Advice, Assignment, Circuit, Column, ConstraintSystem, Error, Expression, Fixed,
+        Advice, Column, ConstraintSystem, Error, Fixed,
         Selector, Instance
     },
     poly::Rotation,
@@ -43,7 +41,7 @@ trait ConvInstructions<F: Field>: Chip<F> {
 
 /// The chip that will implement our instructions! Chips store their own
 /// config, as well as type markers if necessary.
-struct ConvChip<F: Field> {
+pub struct ConvChip<F: Field> {
     config: ConvChipConfig,
     _marker: PhantomData<F>,
 }
@@ -62,7 +60,7 @@ impl<F: Field> Chip<F> for ConvChip<F> {
 }
 
 #[derive(Clone, Debug)]
-struct ConvChipConfig {
+pub struct ConvChipConfig {
     //input, kernel and bias
     advice: [Column<Advice>; 4],
     // This is the public input (instance) column.
@@ -106,7 +104,7 @@ impl<F: Field> ConvChip<F> {
             // Construct the expressions for the convolution formula and constraint
             // y[i,j] = sum(x[i+k,j+l] * w[k,l] + b[i,j]) for k,l in [0,n-1]
             let mut res = b;
-
+            
             for k in 0..n {
                 for l in 0..n {
                     // value of x[i+k,j+l]
