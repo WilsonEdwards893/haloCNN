@@ -280,7 +280,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                         let ret = region
                         .assign_advice(
                             || format!("output[{}][{}]", i, j),
-                            config.advice[3], // use the third advice column
+                            config.advice[3], // use the 4th advice column
                             i * output_col + j, // offset of current cell
                             || output_value,
                         ).map(Number);
