@@ -13,4 +13,3 @@ struct ConvCircuit<F: Field> {
     kernel: Matrix<Value<F>>,
     bias: Vec<Value<F>>,
 }
-
