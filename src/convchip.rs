@@ -100,7 +100,7 @@ impl<F: Field> ConvChip<F> {
             let w = meta.query_advice(advice[1], Rotation::cur()); // Kernel matrix
             let b = meta.query_advice(advice[2], Rotation::cur()); // Bias vector
             let y = meta.query_instance(instance, Rotation::cur()); // Output matrix
-
+            
             // Construct the expressions for the convolution formula and constraint
             // y[i,j] = sum(x[i+k,j+l] * w[k,l] + b[i,j]) for k,l in [0,n-1]
             let mut res = b;

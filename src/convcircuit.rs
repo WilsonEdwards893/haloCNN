@@ -1,5 +1,5 @@
 use halo2_proofs::{circuit::{Value, SimpleFloorPlanner}, plonk::{Circuit, ConstraintSystem},arithmetic::Field};
-use crate::matrix::Matrix;
+use crate::matrix::{Matrix, shape};
 use halo2_test::convchip::{ConvChip, ConvChipConfig};
 /// The full circuit implementation.
 ///
@@ -34,13 +34,13 @@ impl<F: Field> Circuit<F> for ConvCircuit<F> {
         // Create a fixed column to load constants.
         let constant = meta.fixed_column();
 
-        let filter_size: usize = Self::filter.iter().map(Vec::len).sum();
-        ConvChip::configure(meta, advice, instance, constant, filter_size)
+        ConvChip::configure(meta, advice, instance, constant, )
     }
 
     fn synthesize(&self, 
         config: Self::Config, 
         layouter: impl halo2_proofs::circuit::Layouter<F>) -> Result<(), halo2_proofs::plonk::Error> {
+        
         todo!()
     }
 }
