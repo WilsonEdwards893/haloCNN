@@ -1,6 +1,6 @@
-use halo2_proofs::{circuit::{Value, SimpleFloorPlanner}, plonk::{Circuit, ConstraintSystem},arithmetic::Field};
+use halo2_proofs::{circuit::{Value, SimpleFloorPlanner}, plonk::{Circuit, ConstraintSystem, Error},arithmetic::Field};
 use crate::matrix::{Matrix, shape};
-use halo2_test::convchip::{ConvChip, ConvChipConfig};
+use halo2_test::convchip::{ConvChip, ConvChipConfig, ConvInstructions,self};
 /// The full circuit implementation.
 ///
 /// In this struct we store the private input variables. We use `Option<F>` because
@@ -33,14 +33,20 @@ impl<F: Field> Circuit<F> for ConvCircuit<F> {
  
         // Create a fixed column to load constants.
         let constant = meta.fixed_column();
-
-        ConvChip::configure(meta, advice, instance, constant, )
+        
+        ConvChip::configure(meta, advice, instance, constant, 100)
     }
 
     fn synthesize(&self, 
         config: Self::Config, 
-        layouter: impl halo2_proofs::circuit::Layouter<F>) -> Result<(), halo2_proofs::plonk::Error> {
-        
-        todo!()
+        layouter: impl halo2_proofs::circuit::Layouter<F>) -> Result<(), Error> {
+
+        let conv_chip = ConvChip::<F>::construct(config);
+        // Load our private values into the circuit.
+        let input = conv_chip.load_matrix(layouter.namespace(|| "load input"), 0, &self.input)?;
+        let kernel = conv_chip.load_matrix(layouter.namespace(|| "load filter"), 1, &self.filter)?;
+        let bias = conv_chip.load_bias(layouter, self.bias);
+
+        let output = conv_chip.conv(layouter, input, kernel, bias);
     }
 }

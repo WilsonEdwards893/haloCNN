@@ -14,7 +14,7 @@ pub use crate::matrix::Matrix;
 use crate::matrix::{rows, shape};
 
 // followed by the example at https://zcash.github.io/halo2/user/simple-example.html
-trait ConvInstructions<F: Field>: Chip<F> {
+pub trait ConvInstructions<F: Field>: Chip<F> {
     type Num;
     // Loads input
     fn load_matrix(&self, layouter: impl Layouter<F>, index:usize, input: &Matrix<Value<F>>)-> Result<Matrix<Self::Num>, Error>;
@@ -70,14 +70,14 @@ pub struct ConvChipConfig {
 }
 
 impl<F: Field> ConvChip<F> {
-    fn construct(config: <Self as Chip<F>>::Config) -> Self {
+    pub fn construct(config: <Self as Chip<F>>::Config) -> Self {
         Self {
             config,
             _marker: PhantomData,
         }
     }
 
-    fn configure(
+    pub fn configure(
         meta: &mut ConstraintSystem<F>,
         advice: [Column<Advice>; 4],
         instance: Column<Instance>,
@@ -139,7 +139,7 @@ impl<F: Field> ConvChip<F> {
 
 /// A variable representing a number.
 #[derive(Clone)]
-struct Number<F: Field>(AssignedCell<F, F>);
+pub struct Number<F: Field>(AssignedCell<F, F>);
 
 impl<F: Field> ConvInstructions<F> for ConvChip<F> {
     type Num = Number<F>;
