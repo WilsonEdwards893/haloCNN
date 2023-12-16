@@ -20,7 +20,7 @@ pub trait ConvInstructions<F: Field>: Chip<F> {
     fn load_matrix(&self, layouter: impl Layouter<F>, index:usize, input: &Matrix<Value<F>>)-> Result<Matrix<Self::Num>, Error>;
 
     // Loads kernel and bias matrix
-    fn load_bias(&self, layouter: impl Layouter<F>, bias: Vec<Value<F>>) -> Result<Vec<Self::Num>, Error>;
+    fn load_bias(&self, layouter: impl Layouter<F>, bias: &Vec<Value<F>>) -> Result<Vec<Self::Num>, Error>;
 
     // Returns `ouput = input * kernel + bias`.
     fn conv(
@@ -191,7 +191,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
         Ok(matrix)
     }
 
-    fn load_bias(&self, mut layouter: impl Layouter<F>, bias: Vec<Value<F>>) -> Result<Vec<Self::Num>, Error> {
+    fn load_bias(&self, mut layouter: impl Layouter<F>, bias: &Vec<Value<F>>) -> Result<Vec<Self::Num>, Error> {
         let config = self.config();
 
         // acquire the length of the bias vector
