@@ -39,14 +39,15 @@ impl<F: Field> Circuit<F> for ConvCircuit<F> {
 
     fn synthesize(&self, 
         config: Self::Config, 
-        layouter: impl halo2_proofs::circuit::Layouter<F>) -> Result<(), Error> {
+        mut layouter: impl halo2_proofs::circuit::Layouter<F>) -> Result<(), Error> {
 
         let conv_chip = ConvChip::<F>::construct(config);
         // Load our private values into the circuit.
         let input = conv_chip.load_matrix(layouter.namespace(|| "load input"), 0, &self.input)?;
         let kernel = conv_chip.load_matrix(layouter.namespace(|| "load filter"), 1, &self.filter)?;
         let bias = conv_chip.load_bias(layouter.namespace(|| "load bias"), &self.bias);
-
+        let bias = bias.unwrap_or_else(|_| Vec::new());
+        
         let output = conv_chip.conv(layouter, input, kernel, bias);
         
         // Expose the result as a public input to the circuit.
