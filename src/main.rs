@@ -12,6 +12,8 @@ use halo2_proofs::{
 
 mod convcircuit;
 mod matrix;
+
 fn main() {
+    let k = 2^16;
     
 }
