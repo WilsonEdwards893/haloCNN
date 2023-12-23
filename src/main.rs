@@ -1,3 +1,7 @@
+mod circuit;
+mod matrix;
+
+use circuit::{ConvCircuit, run_conv_test};
 use halo2_proofs::{
     arithmetic::Field,
     circuit::{layouter::TableLayouter, Cell, Value, Chip, Layouter},
@@ -10,10 +14,9 @@ use halo2_proofs::{
     poly::Rotation,
 };
 
-mod convcircuit;
-mod matrix;
 
 fn main() {
-    let k = 2^16;
+    
+    run_conv_test(1);
     
 }
