@@ -1,6 +1,8 @@
 mod circuit;
 mod matrix;
 
+use std::env;
+
 use circuit::{ConvCircuit, run_conv_test};
 use halo2_proofs::{
     arithmetic::Field,
@@ -16,7 +18,7 @@ use halo2_proofs::{
 
 
 fn main() {
-    
+    env::set_var("RUST_BACKTRACE", "1");
     run_conv_test(1);
     
 }
