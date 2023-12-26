@@ -63,13 +63,13 @@ pub fn run_conv_test(filter_num: usize) {
     // Create a random number generator
     let mut rng = rand::thread_rng();
     let mut input: Matrix<Value<Fp>> = Vec::new();
-
+    let input_size = 28;
     // Use a loop to assign values to each row of the matrix
-    for _ in 0..32 {
+    for _ in 0..input_size {
         // Create an empty matrix let mut matrix
         let mut row: Vec<Value<Fp>> = Vec::new();
         // Use a loop to assign values to each element of the vector
-        for _ in 0..32 {
+        for _ in 0..input_size {
             // Generate a random integer from 0 to 255
             let x = rng.gen_range(0..256);
             // Use Fp::from(x) to convert the integer to a finite field element
@@ -105,7 +105,7 @@ pub fn run_conv_test(filter_num: usize) {
         bias,
     };
 
-    let output_size = 32 - 5 + 1;
+    let output_size = input_size - 5 + 1;
     let mut output: Vec<Fp> = Vec::new();
 
     for _ in 0..output_size*output_size {
