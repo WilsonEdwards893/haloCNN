@@ -18,7 +18,7 @@ use halo2_proofs::{
 
 
 fn main() {
-    env::set_var("RUST_BACKTRACE", "1");
+    env::set_var("RUST_BACKTRACE", "full");
     run_conv_test(1);
     
 }

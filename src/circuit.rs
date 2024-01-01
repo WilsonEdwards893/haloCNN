@@ -57,7 +57,7 @@ impl<F: Field> Circuit<F> for ConvCircuit<F> {
 pub fn run_conv_test(filter_num: usize) {
     // The number of rows in our circuit cannot exceed 2^k
     // and the input set of MNIST and CIFAR10 is 32*32
-    let k = 2^10;
+    let k = 12;
     let constant = Fp::from(0);
 
     // Create a random number generator
@@ -77,7 +77,7 @@ pub fn run_conv_test(filter_num: usize) {
             // Add the element to the vector
             row.push(Value::known(y));
         }
-        // 将向量添加到矩阵中
+        // Add vector to the matrix
         input.push(row);
     }
 
@@ -99,6 +99,8 @@ pub fn run_conv_test(filter_num: usize) {
     let mut bias: Vec<Value<Fp>> = Vec::new();
     bias.push(Value::known(Fp::from(0)));
 
+
+
     let circuit = ConvCircuit {
         input,
         filter,
@@ -108,10 +110,11 @@ pub fn run_conv_test(filter_num: usize) {
     let output_size = input_size - 5 + 1;
     let mut output: Vec<Fp> = Vec::new();
 
-    for _ in 0..output_size*output_size {
-        let value = Fp::from(0);
-        output.push(value)  
+    for _ in 0..(output_size*output_size) {
+        let value = Fp::from(1);
+        output.push(value)
     }
+
 
     let prover = MockProver::run(k, &circuit, vec![output]).unwrap();
     assert!(prover.verify().is_err());
