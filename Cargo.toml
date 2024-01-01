@@ -5,6 +5,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
 [dependencies]
 halo2_proofs = { path = "D:\\halo2-main\\halo2_proofs" }
 ff = "0.12.0"

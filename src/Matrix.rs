@@ -6,8 +6,22 @@ use ff::Field;
 /// Matrix represented as a Vec of rows, so that m[i][j] represents the jth column of the ith row in Matrix, m.
 pub type Matrix<T> = Vec<Vec<T>>;
 
+/// Returns the number of rows in a matrix. 
+/// Panics if the matrix is not well-formed. 
 pub fn rows<T>(matrix: &Matrix<T>) -> usize {
-    matrix.len()
+    // Check if the matrix is empty
+    if matrix.is_empty() {
+        0
+    } else {
+        // Get the length of the first row
+        let row_length = matrix[0].len();
+        // Check if all rows have the same length
+        for row in matrix {
+            assert!(row.len() == row_length, "not a matrix");
+        }
+        // Return the length of the matrix
+        matrix.len()
+    }
 }
 
 /// Panics if `matrix` is not actually a matrix. So only use any of these functions on well-formed data.

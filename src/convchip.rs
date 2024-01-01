@@ -174,7 +174,6 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                             || value,
                         ).map(Number)
                         ;
-
                         values.push(ret.unwrap());
                     }
                 }

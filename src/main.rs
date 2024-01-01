@@ -1,3 +1,9 @@
+mod circuit;
+mod matrix;
+
+use std::env;
+
+use circuit::{ConvCircuit, run_conv_test};
 use halo2_proofs::{
     arithmetic::Field,
     circuit::{layouter::TableLayouter, Cell, Value, Chip, Layouter},
@@ -9,11 +15,12 @@ use halo2_proofs::{
     },
     poly::Rotation,
 };
-use rand::Rng;
+
 mod convcircuit;
 mod matrix;
 
 fn main() {
-    let k = 2^10;
+    env::set_var("RUST_BACKTRACE", "full");
+    run_conv_test(1);
     
 }
