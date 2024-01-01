@@ -17,7 +17,6 @@ use halo2_proofs::{
 };
 
 mod convcircuit;
-mod matrix;
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "full");
