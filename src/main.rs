@@ -9,11 +9,11 @@ use halo2_proofs::{
     },
     poly::Rotation,
 };
-
+use rand::Rng;
 mod convcircuit;
 mod matrix;
 
 fn main() {
-    let k = 2^16;
+    let k = 2^10;
     
 }

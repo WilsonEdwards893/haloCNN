@@ -221,6 +221,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                 Ok(())
             },
         );
+        
         Ok(values)
     }
 

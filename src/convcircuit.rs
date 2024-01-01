@@ -34,7 +34,7 @@ impl<F: Field> Circuit<F> for ConvCircuit<F> {
         // Create a fixed column to load constants.
         let constant = meta.fixed_column();
         
-        ConvChip::configure(meta, advice, instance, constant, 100)
+        ConvChip::configure(meta, advice, instance, constant, 25)
     }
 
     fn synthesize(&self, 
