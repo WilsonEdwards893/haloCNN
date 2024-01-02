@@ -17,7 +17,7 @@ use crate::matrix::{rows, shape};
 pub trait ConvInstructions<F: Field>: Chip<F> {
     type Num;
     // Loads input
-    fn load_matrix(&self, layouter: impl Layouter<F>, index:usize, input: &Matrix<Value<F>>)-> Result<Matrix<Self::Num>, Error>;
+    fn load_matrix_from_advice(&self, layouter: impl Layouter<F>, index:usize, input: &Matrix<Value<F>>)-> Result<Matrix<Self::Num>, Error>;
 
     // Loads kernel and bias matrix
     fn load_bias(&self, layouter: impl Layouter<F>, bias: &Vec<Value<F>>) -> Result<Vec<Self::Num>, Error>;
@@ -66,7 +66,7 @@ pub struct ConvChipConfig {
     // This is the public input (instance) column.
     instance: Column<Instance>,
     constant: Column<Fixed>,
-    s_conv: Selector,
+    selector: Selector,
 }
 
 impl<F: Field> ConvChip<F> {
@@ -89,11 +89,11 @@ impl<F: Field> ConvChip<F> {
         for column in &advice {
             meta.enable_equality(*column);
         }
-        let s_conv = meta.selector();
+        let selector = meta.selector();
         
         meta.create_gate("conv", |meta| {
             // Query the selector
-            let s_conv = meta.query_selector(s_conv);
+            let s_conv = meta.query_selector(selector);
 
             // Query the variables from the columns
             let x = meta.query_advice(advice[0], Rotation::cur()); // Input matrix
@@ -131,7 +131,7 @@ impl<F: Field> ConvChip<F> {
             advice,
             instance,
             constant,
-            s_conv,
+            selector,
         }
     }
 
@@ -144,11 +144,11 @@ pub struct Number<F: Field>(AssignedCell<F, F>);
 impl<F: Field> ConvInstructions<F> for ConvChip<F> {
     type Num = Number<F>;
 
-    // load matrix
-    fn load_matrix(&self, mut layouter: impl Layouter<F>, index: usize, input: &Matrix<Value<F>>)-> Result<Matrix<Self::Num>, Error> {
+    // load matrix from advice column
+    fn load_matrix_from_advice(&self, mut layouter: impl Layouter<F>, index: usize, input: &Matrix<Value<F>>)-> Result<Matrix<Self::Num>, Error> {
         
         let config = self.config();
-
+        
         // acquire the row and column of a matrix
         let (row, col) = shape(input);
         
@@ -165,23 +165,28 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                     for j in 0..col {
                         // acquire value of input[i][j]
                         let value = input[i][j];
+                        // enable selector
+                        let offset = i * col + j;
+                        // config.selector.enable(&mut region, offset);
                         // assgin value to current cell
                         let ret = region
                         .assign_advice(
                             || format!("input[{}][{}]", i, j),
                             config.advice[index],
-                            i * col + j, // offset of current cell
+                            offset, // offset of current cell
                             || value,
-                        ).map(Number)
-                        ;
+                        ).map(Number);
+                        // add the result to vector
                         values.push(ret.unwrap());
                     }
                 }
                 Ok(())
             },
         );
+        
         // turn vector to a matrix
         let matrix = values
+        .split_off(row * col)
         .chunks(col)
         .map(|chunk| chunk.to_vec())
         .collect::<Matrix<Self::Num>>();
@@ -206,6 +211,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                 for i in 0..len {
                     // get the bias[i] value
                     let value = bias[i];
+                    
                     // assign value to the current cell
                     let ret = region
                     .assign_advice(
@@ -220,6 +226,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                 Ok(())
             },
         );
+        values.split_off(len);
         Ok(values)
     }
 
@@ -256,6 +263,9 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                         // create a vector for the dot product values
                         let mut dot_products = Vec::new();
 
+                        let offset = i * output_col + j;
+                        config.selector.enable(&mut region, offset);
+
                         // iterate over the kernel matrix
                         for k in 0..kernel_row {
                             for l in 0..kernel_col {
@@ -280,7 +290,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                         .assign_advice(
                             || format!("output[{}][{}]", i, j),
                             config.advice[3], // use the 4th advice column
-                            i * output_col + j, // offset of current cell
+                            offset, // offset of current cell
                             || output_value,
                         ).map(Number);
 
@@ -294,6 +304,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
 
     // turn the output vector into a matrix
     let output_matrix = values
+    .split_off(output_col * output_row)
     .chunks(output_col)
     .map(|chunk| chunk.to_vec())
     .collect::<Matrix<Self::Num>>();

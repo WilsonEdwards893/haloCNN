@@ -1,9 +1,9 @@
-mod circuit;
+mod testcircuit;
 mod matrix;
 
 use std::env;
 
-use circuit::{ConvCircuit, run_conv_test};
+use testcircuit::{ConvCircuit, run_conv_test};
 use halo2_proofs::{
     arithmetic::Field,
     circuit::{layouter::TableLayouter, Cell, Value, Chip, Layouter},
