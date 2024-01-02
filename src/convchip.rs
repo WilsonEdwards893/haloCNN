@@ -227,6 +227,7 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
             },
         );
         values.split_off(len);
+        
         Ok(values)
     }
 
