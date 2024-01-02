@@ -43,8 +43,8 @@ impl<F: Field> Circuit<F> for ConvCircuit<F> {
 
         let conv_chip = ConvChip::<F>::construct(config);
         // Load our private values into the circuit.
-        let input = conv_chip.load_matrix(layouter.namespace(|| "load input"), 0, &self.input)?;
-        let kernel = conv_chip.load_matrix(layouter.namespace(|| "load filter"), 1, &self.filter)?;
+        let input = conv_chip.load_matrix_from_advice(layouter.namespace(|| "load input"), 0, &self.input)?;
+        let kernel = conv_chip.load_matrix_from_advice(layouter.namespace(|| "load filter"), 1, &self.filter)?;
         let bias = conv_chip.load_bias(layouter.namespace(|| "load bias"), &self.bias)?;
         
         let output = conv_chip.conv(layouter.namespace(|| "conv operation"), input, kernel, bias)?;
