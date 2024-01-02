@@ -16,8 +16,6 @@ use halo2_proofs::{
     poly::Rotation,
 };
 
-mod convcircuit;
-
 fn main() {
     env::set_var("RUST_BACKTRACE", "full");
     run_conv_test(1);

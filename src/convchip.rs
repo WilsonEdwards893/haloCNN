@@ -226,9 +226,9 @@ impl<F: Field> ConvInstructions<F> for ConvChip<F> {
                 Ok(())
             },
         );
-        values.split_off(len);
-        
-        Ok(values)
+
+        let bias_vec = values.split_off(len);
+        Ok(bias_vec)
     }
 
     fn conv(

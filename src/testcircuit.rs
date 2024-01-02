@@ -57,8 +57,8 @@ impl<F: Field> Circuit<F> for ConvCircuit<F> {
 pub fn run_conv_test(filter_num: usize) {
     // The number of rows in our circuit cannot exceed 2^k
     // and the input set of MNIST and CIFAR10 is 32*32
-    let k = 12;
-    let constant = Fp::from(0);
+    let k = 14;
+    let constant = Fp::from(7);
 
     // Create a random number generator
     let mut rng = rand::thread_rng();
@@ -71,7 +71,7 @@ pub fn run_conv_test(filter_num: usize) {
         // Use a loop to assign values to each element of the vector
         for _ in 0..input_size {
             // Generate a random integer from 0 to 255
-            let x = rng.gen_range(0..256);
+            let x = rng.gen_range(0..255);
             // Use Fp::from(x) to convert the integer to a finite field element
             let y = Fp::from(x);
             // Add the element to the vector
@@ -87,7 +87,7 @@ pub fn run_conv_test(filter_num: usize) {
     for _ in 0..5 {
         let mut row: Vec<Value<Fp>> = Vec::new();
         for _ in 0..5 {
-            let x = rng.gen_range(0..256);
+            let x = rng.gen_range(0..255);
             let y = Fp::from(x);
             row.push(Value::known(y));
         }
@@ -112,11 +112,12 @@ pub fn run_conv_test(filter_num: usize) {
 
     for _ in 0..(output_size*output_size) {
         let value = Fp::from(1);
-        output.push(value)
+        output.push(constant)
     }
+    //output.push(constant);
+    //output[0] += Fp::one();
 
-
-    let prover = MockProver::run(k, &circuit, vec![output]).unwrap();
+    let prover = MockProver::run(k, &circuit, vec![output.clone()]).unwrap();
     assert!(prover.verify().is_err());
     
 }
