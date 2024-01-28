@@ -2,7 +2,7 @@
 #![allow(clippy::ptr_arg)]
 
 use ff::Field;
-
+use std::cmp::PartialOrd;
 /// Matrix represented as a Vec of rows, so that m[i][j] represents the jth column of the ith row in Matrix, m.
 pub type Matrix<T> = Vec<Vec<T>>;
 

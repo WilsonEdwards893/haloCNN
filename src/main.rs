@@ -1,9 +1,6 @@
-mod testcircuit;
 mod matrix;
-
 use std::env;
 
-use testcircuit::{ConvCircuit, run_conv_test};
 use halo2_proofs::{
     arithmetic::Field,
     circuit::{layouter::TableLayouter, Cell, Value, Chip, Layouter},
@@ -15,9 +12,11 @@ use halo2_proofs::{
     },
     poly::Rotation,
 };
+use halo2_test::lenet5;
+use lenet5::run_lenet5_test;
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
-    run_conv_test(1);
-    
+    //run_conv_test(1, 1);
+    run_lenet5_test();
 }

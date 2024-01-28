@@ -8,5 +8,6 @@ edition = "2021"
 
 [dependencies]
 halo2_proofs = { path = "D:\\halo2-main\\halo2_proofs" }
+halo2_gadgets = { path = "D:\\halo2-main\\halo2_gadgets" }
 ff = "0.12.0"
 rand = "0.8.4"
